@@ -16,16 +16,17 @@
       <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.type]">
         <div class="message-avatar" v-if="msg.type === 'user' || msg.type === 'bot'">
           <el-avatar :size="36" v-if="msg.type === 'user'" :src="user?.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"></el-avatar>
-          <el-avatar :size="36" v-else icon="el-icon-s-custom" style="background-color: #409EFF;">AI</el-avatar>
+          <el-avatar :size="36" v-else icon="el-icon-s-custom" class="bot-avatar">AI</el-avatar>
         </div>
         <div class="message-bubble">
-          <div class="message-content">{{ msg.content }}</div>
+          <div class="message-content" v-if="msg.type !== 'bot'" v-html="renderMarkdown(msg.content)"></div>
+          <TypewriterEffect v-else :content="msg.content" :key="index" @complete="onTypewriterComplete" />
           <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
         </div>
       </div>
       <div v-if="loading" class="message bot loading">
         <div class="message-avatar">
-          <el-avatar :size="36" style="background-color: #409EFF;">AI</el-avatar>
+          <el-avatar :size="36" class="bot-avatar">AI</el-avatar>
         </div>
         <div class="message-bubble">
           <div class="typing-indicator">
@@ -62,6 +63,8 @@ import { ElMessage } from 'element-plus';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useRouter } from 'vue-router';
+import { marked } from 'marked';
+import TypewriterEffect from './TypewriterEffect.vue';
 
 const API_URL = 'http://localhost:3000';
 const socket = ref(null);
@@ -240,6 +243,17 @@ const formatTime = (timestamp) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+// 渲染Markdown
+const renderMarkdown = (text) => {
+  return marked(text);
+};
+
+// 打字机效果完成回调
+const onTypewriterComplete = () => {
+  console.log('打字效果完成');
+  // 可以在这里添加额外的逻辑，比如播放声音等
+};
+
 onMounted(() => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -272,28 +286,34 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  background-color: #f9f9fb;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  background-color: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   position: relative;
+  transition: all 0.3s ease;
 }
 
 .chat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.75rem;
   background-color: #ffffff;
-  border-bottom: 1px solid #eaeaea;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  position: relative;
+  z-index: 10;
 }
 
 .header-left h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: var(--text-color);
+  color: #333;
   font-weight: 600;
+  background: linear-gradient(90deg, #4361ee, #3a0ca3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .user-info {
@@ -304,23 +324,32 @@ onBeforeUnmount(() => {
 
 .username {
   font-weight: 500;
-  color: var(--text-color);
+  color: #333;
 }
 
 .chat-messages {
   flex: 1;
-  padding: 1.5rem;
+  padding: 1.75rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  background-color: var(--bg-color);
+  gap: 1.25rem;
+  background-color: #f9fafb;
+  background-image: radial-gradient(#e9ecef 1px, transparent 1px);
+  background-size: 25px 25px;
+  scroll-behavior: smooth;
 }
 
 .message {
   display: flex;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   max-width: 70%;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .message.user {
@@ -334,48 +363,57 @@ onBeforeUnmount(() => {
 
 .message.system {
   align-self: center;
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 0.5rem 1rem;
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 0.5rem 1.25rem;
   border-radius: 1rem;
   font-size: 0.875rem;
   color: #666;
   max-width: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
 }
 
 .message-avatar {
-  margin: 0 0.5rem;
+  margin: 0 0.75rem;
   align-self: flex-start;
 }
 
+.bot-avatar {
+  background: linear-gradient(135deg, #4361ee, #3a0ca3) !important;
+  color: white;
+  font-weight: 600;
+}
+
 .message-bubble {
-  padding: 0.75rem 1rem;
-  border-radius: 1rem;
-  max-width: calc(100% - 3rem);
+  padding: 1rem 1.25rem;
+  border-radius: 1.25rem;
+  max-width: calc(100% - 3.5rem);
   word-break: break-word;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
 }
 
 .user .message-bubble {
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, #4361ee, #3a0ca3);
   color: white;
   border-top-right-radius: 4px;
 }
 
 .bot .message-bubble {
   background-color: #ffffff;
-  color: var(--text-color);
-  border: 1px solid #eaeaea;
+  color: #333;
+  border: 1px solid rgba(0, 0, 0, 0.05);
   border-top-left-radius: 4px;
 }
 
 .message-content {
-  line-height: 1.5;
+  line-height: 1.6;
   font-size: 1rem;
 }
 
 .message-time {
   font-size: 0.75rem;
   color: #999;
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
   text-align: right;
 }
 
@@ -384,19 +422,80 @@ onBeforeUnmount(() => {
 }
 
 .chat-input {
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.75rem;
   background-color: #ffffff;
-  border-top: 1px solid #eaeaea;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.03);
+  position: relative;
+  z-index: 10;
 }
 
 .message-input {
   width: 100%;
 }
 
+.message-input :deep(.el-input__wrapper) {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.message-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
 .send-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  background: linear-gradient(90deg, #4361ee, #3a0ca3);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.send-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+}
+
+/* 打字指示器样式 */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.typing-indicator span {
+  height: 8px;
+  width: 8px;
+  margin: 0 2px;
+  background-color: #4361ee;
+  border-radius: 50%;
+  display: inline-block;
+  animation: bounce 1.5s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
 }
 
 /* 响应式设计 */
@@ -414,6 +513,7 @@ onBeforeUnmount(() => {
     margin: 0;
     height: 100vh;
     border-radius: 0;
+    box-shadow: none;
   }
 
   .chat-header {
@@ -434,10 +534,11 @@ onBeforeUnmount(() => {
 
   .chat-messages {
     padding: 1rem;
+    background-size: 20px 20px;
   }
 
   .message-bubble {
-    padding: 0.625rem 0.875rem;
+    padding: 0.75rem 1rem;
   }
 
   .chat-input {
@@ -452,6 +553,14 @@ onBeforeUnmount(() => {
 
   .message-content {
     font-size: 0.875rem;
+  }
+  
+  .message-avatar {
+    margin: 0 0.5rem;
+  }
+  
+  .bot-avatar, .user .el-avatar {
+    transform: scale(0.9);
   }
 }
 </style>
