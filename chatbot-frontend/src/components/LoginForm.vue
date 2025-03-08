@@ -63,6 +63,8 @@ const props = defineProps({
   onSuccess: Function
 });
 
+const emit = defineEmits(['login-success']);
+
 const router = useRouter();
 const authForm = ref(null);
 const loading = ref(false);
@@ -117,13 +119,13 @@ const submitForm = async () => {
         duration: 2000
       });
       
-      // 直接跳转到聊天页面
-      router.push('/');
+      // 触发登录成功事件
+      emit('login-success', response.data);
       
-      // 调用成功回调
-      if (props.onSuccess) {
-        props.onSuccess(response.data);
-      }
+      // 确保在状态更新后再跳转
+      setTimeout(() => {
+        router.push('/');
+      }, 300);
     } catch (error) {
       console.error('认证失败:', error);
       const errorMessage = error.response?.data?.error || '认证失败，请稍后重试';

@@ -24,7 +24,7 @@ const router = createRouter({
 // 导航守卫，检查用户是否已登录
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
-  
+
   if (to.matched.some(record => record.meta.requiresAuth)) {
     // 需要认证的路由
     if (!token) {
@@ -34,6 +34,9 @@ router.beforeEach((to, from, next) => {
       // 已登录，允许访问
       next();
     }
+  } else if (to.path === '/login' && token) {
+    // 已登录用户尝试访问登录页，重定向到首页
+    next({ path: '/' });
   } else {
     // 不需要认证的路由，直接访问
     next();

@@ -10,9 +10,10 @@ const isAuthenticated = ref(false);
 const handleLoginSuccess = (data) => {
   isAuthenticated.value = true;
   // 确保在设置完认证状态后再跳转
+  // 增加延迟时间，确保状态更新完成
   setTimeout(() => {
     router.push('/');
-  }, 100);
+  }, 300);
 };
 
 onMounted(() => {
